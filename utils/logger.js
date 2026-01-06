@@ -3,8 +3,8 @@ const logger = {
     console.log(`[INFO] ${message}`, data || "");
   },
   error: (message, error) => {
-    // console.error(`[ERROR] ${message}`, error);
-    // console.error("Stack:", error?.stack);
+    console.error(`[ERROR] ${message}`, error);
+    console.error("Stack:", error?.stack);
     console.log("Something went wrong. Please try again later.");
   },
   debug: (message, data) => {

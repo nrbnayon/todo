@@ -1,21 +1,40 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Draggable } from 'react-beautiful-dnd';
-import { Pencil, Trash2, Check, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useDeleteTodoMutation, useUpdateTodoMutation } from '@/redux/services/todosApi';
+import { useState } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Pencil, Trash2, Check, X, GripVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useDeleteTodoMutation,
+  useUpdateTodoMutation,
+} from "@/redux/services/todosApi";
 
-export default function TodoItem({ todo, index }) {
+export default function TodoItem({ todo }) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(todo.title);
-  const [description, setDescription] = useState(todo.description || '');
+  const [description, setDescription] = useState(todo.description || "");
 
   const [updateTodo] = useUpdateTodoMutation();
   const [deleteTodo] = useDeleteTodoMutation();
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: todo.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const handleUpdate = async () => {
     await updateTodo({
@@ -35,83 +54,85 @@ export default function TodoItem({ todo, index }) {
   };
 
   return (
-    <Draggable draggableId={todo.id.toString()} index={index}>
-      {(provided) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          className="bg-card p-4 rounded-lg shadow-sm border"
-        >
-          {isEditing ? (
-            <div className="space-y-2">
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Task title"
-                className="w-full"
-              />
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Task description"
-                className="w-full"
-              />
-              <div className="flex justify-end space-x-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsEditing(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-                <Button size="sm" onClick={handleUpdate}>
-                  <Check className="h-4 w-4" />
-                </Button>
-              </div>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-card p-4 rounded-lg shadow-sm border"
+    >
+      {isEditing ? (
+        <div className="space-y-2">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Task title"
+            className="w-full"
+          />
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Task description"
+            className="w-full"
+          />
+          <div className="flex justify-end space-x-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsEditing(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <Button size="sm" onClick={handleUpdate}>
+              <Check className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-3 flex-1">
+            <button
+              className="cursor-grab active:cursor-grabbing mt-1 touch-none"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </button>
+            <Checkbox
+              checked={todo.completed}
+              onCheckedChange={handleToggleComplete}
+            />
+            <div className="flex-1">
+              <h3
+                className={`font-medium ${
+                  todo.completed ? "line-through text-muted-foreground" : ""
+                }`}
+              >
+                {title}
+              </h3>
+              {description && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {description}
+                </p>
+              )}
             </div>
-          ) : (
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  checked={todo.completed}
-                  onCheckedChange={handleToggleComplete}
-                />
-                <div>
-                  <h3
-                    className={`font-medium ${
-                      todo.completed ? 'line-through text-muted-foreground' : ''
-                    }`}
-                  >
-                    {title}
-                  </h3>
-                  {description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {description}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => deleteTodo(todo.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsEditing(true)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => deleteTodo(todo.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
-    </Draggable>
+    </div>
   );
 }
